@@ -145,11 +145,13 @@ function NuevoRemate() {
     const lineaIncremento = lineas.find((l) =>
       /Incremento mínimo/i.test(l)
     );
+
     if (lineaIncremento) {
       setIncremento(extraerMonto(lineaIncremento) || 1000);
     }
 
     const lineaCierre = lineas.find((l) => /Cierre/i.test(l));
+
     if (lineaCierre) {
       const fecha = lineaCierre.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       const hora = lineaCierre.match(/(\d{1,2}):(\d{2})/);
@@ -171,6 +173,7 @@ function NuevoRemate() {
     const inicioCaracteristicas = lineas.findIndex((l) =>
       /Características/i.test(l)
     );
+
     const finCaracteristicas = lineas.findIndex((l) =>
       /Base de remate/i.test(l)
     );
@@ -186,6 +189,7 @@ function NuevoRemate() {
     }
 
     const inicioFrase = lineas.findIndex((l) => /Antes de irte/i.test(l));
+
     const finFrase = lineas.findIndex((l) =>
       /Las ofertas se colocan/i.test(l)
     );
@@ -259,8 +263,18 @@ function NuevoRemate() {
     try {
       if (id) {
         await editarRemate(id, datosRemate);
+
+        sessionStorage.setItem(
+          "remate-destacado-numero",
+          String(datosRemate.numero)
+        );
       } else {
         await guardarRemate(datosRemate);
+
+        sessionStorage.setItem(
+          "remate-destacado-numero",
+          String(datosRemate.numero)
+        );
       }
 
       navigate("/remates");

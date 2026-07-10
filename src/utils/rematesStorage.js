@@ -1,5 +1,10 @@
 import { supabase } from "../lib/supabase";
 
+function sanitizarTexto(valor) {
+  const texto = String(valor ?? "");
+  return new TextDecoder().decode(new TextEncoder().encode(texto));
+}
+
 function armarFechaCierre(fecha, hora) {
   if (!fecha || !hora) return null;
   return `${fecha}T${hora}:00-03:00`;
@@ -7,6 +12,7 @@ function armarFechaCierre(fecha, hora) {
 
 function fechaParaInput(fechaCierre) {
   if (!fechaCierre) return "";
+
   return new Date(fechaCierre).toLocaleDateString("en-CA", {
     timeZone: "America/Argentina/Cordoba",
   });
@@ -14,6 +20,7 @@ function fechaParaInput(fechaCierre) {
 
 function horaParaInput(fechaCierre) {
   if (!fechaCierre) return "18:00";
+
   return new Date(fechaCierre).toLocaleTimeString("es-AR", {
     timeZone: "America/Argentina/Cordoba",
     hour: "2-digit",
@@ -66,17 +73,26 @@ function adaptarRemate(remate) {
     fechaCierre: fechaParaInput(remate.fecha_cierre),
     horaCierre: horaParaInput(remate.fecha_cierre),
     imagen: remate.imagen || "",
-    estado: remate.estado || "ACTIVO",
+    estado: remate.estado || (remate.activo ? "ACTIVO" : "FINALIZADO"),
     frase: remate.frase || "",
   };
 }
 
-export async function obtenerRemates() {
-  const { data, error } = await supabase
+export async function obtenerRemates(opciones = {}) {
+  const { soloActivos = false } = opciones;
+
+  let consulta = supabase
     .from("remates")
     .select("*")
-    .neq("estado", "ARCHIVADO")
-    .order("numero", { ascending: true });
+    .neq("estado", "ARCHIVADO");
+
+  if (soloActivos) {
+    consulta = consulta.eq("estado", "ACTIVO");
+  }
+
+  const { data, error } = await consulta.order("numero", {
+    ascending: true,
+  });
 
   if (error) {
     console.error("Error al obtener remates:", error);
@@ -87,22 +103,29 @@ export async function obtenerRemates() {
 }
 
 export async function guardarRemate(remate) {
-  const fechaCierre = armarFechaCierre(remate.fechaCierre, remate.horaCierre);
+  const fechaCierre = armarFechaCierre(
+    remate.fechaCierre,
+    remate.horaCierre
+  );
 
-  const { error } = await supabase.from("remates").insert({
+  const datosParaGuardar = {
     numero: Number(remate.numero),
-    titulo: remate.titulo || "",
-    descripcion: remate.descripcion || "",
-    barrio: remate.barrio || "",
+    titulo: sanitizarTexto(remate.titulo),
+    descripcion: sanitizarTexto(remate.descripcion),
+    barrio: sanitizarTexto(remate.barrio),
     base: Number(remate.base || 0),
     incremento: Number(remate.incrementoMinimo || 1000),
     oferta_actual: Number(remate.base || 0),
     fecha_cierre: fechaCierre,
-    imagen: remate.imagen || "",
-    frase: remate.frase || "",
+    imagen: sanitizarTexto(remate.imagen),
+    frase: sanitizarTexto(remate.frase),
     activo: true,
     estado: "ACTIVO",
-  });
+  };
+
+  const { error } = await supabase
+    .from("remates")
+    .insert([datosParaGuardar]);
 
   if (error) throw error;
 }
@@ -117,15 +140,15 @@ export async function editarRemate(id, remateEditado) {
     .from("remates")
     .update({
       numero: Number(remateEditado.numero),
-      titulo: remateEditado.titulo || "",
-      descripcion: remateEditado.descripcion || "",
-      barrio: remateEditado.barrio || "",
+      titulo: sanitizarTexto(remateEditado.titulo),
+      descripcion: sanitizarTexto(remateEditado.descripcion),
+      barrio: sanitizarTexto(remateEditado.barrio),
       base: Number(remateEditado.base || 0),
       incremento: Number(remateEditado.incrementoMinimo || 1000),
       oferta_actual: Number(remateEditado.base || 0),
       fecha_cierre: fechaCierre,
-      imagen: remateEditado.imagen || "",
-      frase: remateEditado.frase || "",
+      imagen: sanitizarTexto(remateEditado.imagen),
+      frase: sanitizarTexto(remateEditado.frase),
       activo: true,
       estado: "ACTIVO",
     })

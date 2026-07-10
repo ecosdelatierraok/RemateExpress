@@ -67,3 +67,23 @@ Historial de remates finalizados.
 Papelera/Archivados.
 Roles múltiples de Curadores.
 Integración con almacenamiento de imágenes en la nube.
+
+📚 Bitácora – 08/07/2026
+
+✅ Se reemplazó la lógica de activo/inactivo por estados de remate:
+- ACTIVO
+- FINALIZADO
+- ARCHIVADO (preparado)
+
+✅ Se implementó la finalización manual del remate.
+
+✅ Se bloquean las ofertas una vez finalizado.
+
+✅ Se determina automáticamente el ganador por la mejor oferta.
+
+✅ Los teléfonos y datos sensibles sólo son visibles para la Curadora.
+
+✅ La oferta actual quedó sincronizada con Supabase, eliminando la inconsistencia entre la lista de remates y el detalle.
+
+🚧 Próximo paso:
+Unificar la representación visual de los estados mediante `estadoRemate.js`, implementar el archivado desde la interfaz y luego migrar el historial completo de ofertas a Supabase.

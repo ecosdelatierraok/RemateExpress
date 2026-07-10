@@ -9,6 +9,10 @@ import {
   finalizarRemate,
   actualizarOfertaActual,
 } from "../utils/rematesStorage";
+import {
+  obtenerOfertas,
+  guardarOferta,
+} from "../utils/ofertasStorage";
 import "../App.css";
 
 function DetalleRemate() {
@@ -32,16 +36,32 @@ function DetalleRemate() {
 
     setRemate(encontrado || null);
     setCargando(false);
+
+    return encontrado || null;
+  }
+
+  async function cargarOfertas(remateId) {
+    try {
+      const datos = await obtenerOfertas(remateId);
+      setOfertas(datos);
+    } catch (error) {
+      console.error("Error al cargar ofertas:", error);
+      setOfertas([]);
+    }
   }
 
   useEffect(() => {
-    cargarRemate();
-  }, [id]);
+    async function iniciar() {
+      const remateEncontrado = await cargarRemate();
 
-  useEffect(() => {
-    const ofertasGuardadas = localStorage.getItem(`ofertas-remate-${id}`);
-    setOfertas(ofertasGuardadas ? JSON.parse(ofertasGuardadas) : []);
-    setMonto("");
+      if (remateEncontrado) {
+        await cargarOfertas(remateEncontrado.id);
+      }
+
+      setMonto("");
+    }
+
+    iniciar();
   }, [id]);
 
   if (cargando) {
@@ -105,28 +125,21 @@ function DetalleRemate() {
       return;
     }
 
-    const nuevasOfertas = [
-      ...ofertas,
-      {
-        nombre: ofertante.nombre,
-        telefono: ofertante.telefono,
-        monto: montoNumerico,
-        fecha: new Date().toLocaleString("es-AR"),
-      },
-    ];
-
     try {
       setOfertando(true);
 
-      await actualizarOfertaActual(id, montoNumerico);
+      await guardarOferta({
+        remateId: remate.id,
+        nombre: ofertante.nombre,
+        telefono: ofertante.telefono,
+        monto: montoNumerico,
+      });
 
-      setOfertas(nuevasOfertas);
-      localStorage.setItem(
-        `ofertas-remate-${id}`,
-        JSON.stringify(nuevasOfertas)
-      );
-      setMonto("");
+      await actualizarOfertaActual(remate.id, montoNumerico);
+      await cargarOfertas(remate.id);
       await cargarRemate();
+
+      setMonto("");
     } catch (error) {
       console.error("Error al registrar oferta:", error);
       alert("No se pudo registrar la oferta. Intentá nuevamente.");
@@ -144,8 +157,9 @@ function DetalleRemate() {
 
     try {
       setFinalizando(true);
-      await finalizarRemate(id);
+      await finalizarRemate(remate.id);
       await cargarRemate();
+      await cargarOfertas(remate.id);
     } catch (error) {
       console.error("Error al finalizar remate:", error);
       alert("No se pudo finalizar el remate.");
@@ -292,8 +306,8 @@ function DetalleRemate() {
           {ofertas.length === 0 ? (
             <p>Todavía no hay ofertas nuevas.</p>
           ) : (
-            ofertas.map((oferta, index) => (
-              <p key={index}>
+            ofertas.map((oferta) => (
+              <p key={oferta.id}>
                 {oferta.nombre}: ${Number(oferta.monto).toLocaleString("es-AR")}
                 {adminActivo && oferta.telefono
                   ? ` · 📱 ${oferta.telefono}`
