@@ -15,57 +15,85 @@ function Remates() {
 
   const [remates, setRemates] = useState([]);
   const [cantidadesOfertas, setCantidadesOfertas] = useState({});
-  const [barrioSeleccionado, setBarrioSeleccionado] = useState("TODOS");
-  const [orden, setOrden] = useState("NUMERO");
+
+  const [barrioSeleccionado, setBarrioSeleccionado] = useState(
+    sessionStorage.getItem("filtro-barrio-remates") || "TODOS"
+  );
+
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState(() => {
+    const estadoGuardado =
+      sessionStorage.getItem("filtro-estado-remates") || "TODOS";
+
+    if (!admin && estadoGuardado === "ARCHIVADO") {
+      return "TODOS";
+    }
+
+    return estadoGuardado;
+  });
+
+  const [orden, setOrden] = useState(
+    sessionStorage.getItem("orden-remates") || "NUMERO"
+  );
 
   useEffect(() => {
     async function cargarRemates() {
       const [datos, cantidades] = await Promise.all([
         obtenerRemates({
-          soloActivos: !admin,
+          incluirArchivados: admin,
         }),
         obtenerCantidadOfertasPorRemate(),
       ]);
 
       setRemates(datos);
       setCantidadesOfertas(cantidades);
-
-      setTimeout(() => {
-        const numeroDestacado = sessionStorage.getItem(
-          "remate-destacado-numero"
-        );
-
-        if (numeroDestacado) {
-          const tarjeta = document.getElementById(
-            `remate-${numeroDestacado}`
-          );
-
-          if (tarjeta) {
-            tarjeta.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
-          }
-
-          sessionStorage.removeItem("remate-destacado-numero");
-          return;
-        }
-
-        const scroll = sessionStorage.getItem("scroll-remates");
-
-        if (scroll) {
-          window.scrollTo({
-            top: Number(scroll),
-            behavior: "auto",
-          });
-
-          sessionStorage.removeItem("scroll-remates");
-        }
-      }, 50);
     }
 
     cargarRemates();
   }, [admin]);
+
+  useEffect(() => {
+    if (remates.length === 0) return;
+
+    const temporizador = setTimeout(() => {
+      const numeroDestacado = sessionStorage.getItem(
+        "remate-destacado-numero"
+      );
+
+      if (numeroDestacado) {
+        const tarjeta = document.getElementById(
+          `remate-${numeroDestacado}`
+        );
+
+        if (tarjeta) {
+          tarjeta.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+
+        sessionStorage.removeItem("remate-destacado-numero");
+        return;
+      }
+
+      const scroll = sessionStorage.getItem("scroll-remates");
+
+      if (scroll) {
+        window.scrollTo({
+          top: Number(scroll),
+          behavior: "auto",
+        });
+
+        sessionStorage.removeItem("scroll-remates");
+      }
+    }, 100);
+
+    return () => clearTimeout(temporizador);
+  }, [
+    remates,
+    barrioSeleccionado,
+    estadoSeleccionado,
+    orden,
+  ]);
 
   const barrios = useMemo(() => {
     return [
@@ -78,12 +106,19 @@ function Remates() {
   }, [remates]);
 
   const rematesVisibles = useMemo(() => {
-    const filtrados =
-      barrioSeleccionado === "TODOS"
-        ? [...remates]
-        : remates.filter(
-            (remate) => remate.barrio === barrioSeleccionado
-          );
+    let filtrados = [...remates];
+
+    if (barrioSeleccionado !== "TODOS") {
+      filtrados = filtrados.filter(
+        (remate) => remate.barrio === barrioSeleccionado
+      );
+    }
+
+    if (estadoSeleccionado !== "TODOS") {
+      filtrados = filtrados.filter(
+        (remate) => remate.estado === estadoSeleccionado
+      );
+    }
 
     if (orden === "MAS_OFERTAS") {
       return filtrados.sort((a, b) => {
@@ -104,19 +139,35 @@ function Remates() {
   }, [
     remates,
     barrioSeleccionado,
+    estadoSeleccionado,
     orden,
     cantidadesOfertas,
   ]);
+
+  function cambiarBarrio(valor) {
+    setBarrioSeleccionado(valor);
+    sessionStorage.setItem("filtro-barrio-remates", valor);
+  }
+
+  function cambiarEstado(valor) {
+    setEstadoSeleccionado(valor);
+    sessionStorage.setItem("filtro-estado-remates", valor);
+  }
+
+  function cambiarOrden(valor) {
+    setOrden(valor);
+    sessionStorage.setItem("orden-remates", valor);
+  }
 
   return (
     <main className="app">
       <section className="hero">
         <Logo />
 
-        <h1>{admin ? "Remates" : "Remates activos"}</h1>
+        <h1>Remates</h1>
 
         <p className="frase">
-          Estos son los objetos buscando nuevo hogar.
+          Objetos buscando un nuevo hogar.
         </p>
 
         {admin && (
@@ -131,6 +182,7 @@ function Remates() {
 
             <button
               className="boton-secundario"
+              type="button"
               onClick={async () => {
                 await migrarRematesLocalesASupabase();
                 window.location.reload();
@@ -141,8 +193,10 @@ function Remates() {
 
             <button
               className="boton-secundario"
+              type="button"
               onClick={() => {
                 salirAdmin();
+                sessionStorage.removeItem("filtro-estado-remates");
                 window.location.reload();
               }}
             >
@@ -153,12 +207,12 @@ function Remates() {
 
         <div className="form-oferta">
           <label className="campo-form">
-            <span>Filtrar por barrio</span>
+            <span>📍 Filtrar por barrio</span>
 
             <select
               value={barrioSeleccionado}
               onChange={(event) =>
-                setBarrioSeleccionado(event.target.value)
+                cambiarBarrio(event.target.value)
               }
             >
               <option value="TODOS">Todos los barrios</option>
@@ -172,11 +226,36 @@ function Remates() {
           </label>
 
           <label className="campo-form">
+            <span>Filtrar por estado</span>
+
+            <select
+              value={estadoSeleccionado}
+              onChange={(event) =>
+                cambiarEstado(event.target.value)
+              }
+            >
+              <option value="TODOS">Todos</option>
+              <option value="ACTIVO">🟢 Activos</option>
+              <option value="FINALIZADO">
+                🏁 Finalizados en los últimos 7 días
+              </option>
+
+              {admin && (
+                <option value="ARCHIVADO">
+                  📦 Historial
+                </option>
+              )}
+            </select>
+          </label>
+
+          <label className="campo-form">
             <span>Ordenar</span>
 
             <select
               value={orden}
-              onChange={(event) => setOrden(event.target.value)}
+              onChange={(event) =>
+                cambiarOrden(event.target.value)
+              }
             >
               <option value="NUMERO">Número de remate</option>
               <option value="MAS_OFERTAS">
@@ -187,14 +266,17 @@ function Remates() {
         </div>
 
         {rematesVisibles.length === 0 ? (
-          <p>No hay remates disponibles para este barrio.</p>
+          <p>No hay remates disponibles con esos filtros.</p>
         ) : (
           rematesVisibles.map((remate) => (
             <div
               key={remate.id}
               id={`remate-${remate.numero}`}
             >
-              <TarjetaRemate remate={remate} />
+              <TarjetaRemate
+                remate={remate}
+                cantidadOfertas={cantidadesOfertas[remate.id] || 0}
+              />
             </div>
           ))
         )}

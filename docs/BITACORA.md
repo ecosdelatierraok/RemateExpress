@@ -1,89 +1,168 @@
 # Bitácora Remate Express Core
 
-## 02/07/2026
+---
+
+# 02/07/2026
 
 - Git instalado.
 - Git configurado.
 - Primer commit realizado.
 - Proyecto publicado en GitHub.
 - Definimos que la PWA será el lugar donde viven los remates.
-- WhatsApp será puerta de entrada y canal de avisos.
-- Decidimos que quien ofrece el objeto hace la carga inicial.
-- La Curadora revisa, mejora y activa el remate.
-- Definimos la comisión del 10% sobre el valor final adjudicado.
-- Nace el concepto Remate Express Core.
+- WhatsApp será la puerta de entrada y canal de avisos.
+- Quien ofrece el objeto realiza la carga inicial.
+- La Curadora revisa, mejora y activa cada remate.
+- Se define la comisión del 10% sobre el valor final adjudicado.
+- Nace oficialmente el concepto **Remate Express Core**.
 
-03/07/2026
+---
 
-- Se instaló Node.js.
-- Se configuró el entorno de desarrollo.
-- Se instaló React + Vite.
-- Nació oficialmente Remate Express Core.
-- Comenzó el desarrollo de la PWA.
+# 03/07/2026
 
-05/07/2026
+- Instalación de Node.js.
+- Configuración del entorno de desarrollo.
+- Instalación de React + Vite.
+- Nace oficialmente la aplicación Remate Express Core.
+- Comienza el desarrollo de la PWA.
 
-Se implementó React Router y quedó funcionando la primera navegación oficial de Remate Express entre la Home (/) y la pantalla de Remates (/remates). A partir de este punto la aplicación deja de ser un conjunto de pantallas independientes y pasa a comportarse como una PWA con navegación interna.
-Bitácora – 5 de julio de 2026
+---
 
-Estado del proyecto: El flujo principal ya existe y es funcional. Se pueden crear remates desde la PWA, almacenarlos localmente y visualizarlos en la lista. La carga de imágenes quedó implementada y el formulario ya contempla los campos principales para la operación real.
+# 05/07/2026
 
-Pendiente prioritario: Resolver el acceso al detalle de los remates creados por la Curadora. Los remates iniciales funcionan; los nuevos muestran "Remate no encontrado". La revisión se centrará en DetalleRemate.jsx y en la búsqueda del remate desde obtenerRemates().
+## Navegación
 
-Decisión de producto tomada hoy: La frase de neuroventa seguirá siendo redactada por ChatGPT y luego copiada al campo correspondiente. Más adelante se desarrollará un botón para generar automáticamente la publicación completa de WhatsApp con el formato oficial de Remate Express.
+- Implementación de React Router.
+- Home (/).
+- Remates (/remates).
+- La aplicación deja de ser un conjunto de pantallas independientes y pasa a funcionar como una PWA.
 
-📚 Bitácora – 06/07/2026
-✅ Funcionalidades implementadas
-Registro de ofertante por WhatsApp.
-Publicación de remates.
-Absorción automática de publicaciones de WhatsApp.
-Carga y optimización de imágenes.
-Visualización completa del remate.
-Sistema de ofertas.
-Historial de ofertas.
-Edición completa de remates.
-Eliminación de remates.
-Modo Administradora oculto mediante doble clic sobre el logo.
-Protección de pantallas de administración.
-URL amigable usando el número de remate.
-Formato argentino de fecha y hora.
-Incremento y base configurados de $1.000 en $1.000.
-Renovación automática de remates sin ofertas (+24 h).
-Corrección del título de la pestaña del navegador ("Remate Express").
-Etiquetas visibles en todos los campos del formulario.
-🚧 Pendiente para la V1
-Finalizar remate manualmente.
-Marcar ganador.
-Bloquear ofertas una vez finalizado.
-Revisión completa del flujo como Curadora y como Ofertante.
-Publicación en Vercel.
-Prueba desde celular.
-Compartir el primer enlace público por WhatsApp.
-💡 Reservado para V2
-Base dinámica (precio variable).
-Compartir directamente desde la PWA a WhatsApp.
-Generación automática de publicaciones.
-Historial de remates finalizados.
-Papelera/Archivados.
-Roles múltiples de Curadores.
-Integración con almacenamiento de imágenes en la nube.
+## Desarrollo
 
-📚 Bitácora – 08/07/2026
+- Creación de remates.
+- Almacenamiento local.
+- Visualización del listado.
+- Carga de imágenes.
+- Formulario principal.
 
-✅ Se reemplazó la lógica de activo/inactivo por estados de remate:
+## Decisión de producto
+
+- La frase de neuroventa será personalizada para cada objeto.
+- Más adelante se generarán automáticamente las publicaciones de WhatsApp.
+
+---
+
+# 06/07/2026
+
+## Funcionalidades
+
+- Registro de ofertante.
+- Publicación de remates.
+- Sistema de ofertas.
+- Historial de ofertas.
+- Carga de imágenes.
+- Visualización completa.
+- Edición.
+- Eliminación.
+- Acceso oculto de Curadora mediante doble clic.
+- Protección de pantallas administrativas.
+- URL utilizando número de remate.
+- Fecha y hora en formato argentino.
+- Incremento mínimo configurable.
+- Renovación automática de remates sin ofertas.
+- Corrección del título del navegador.
+- Etiquetas visibles en formularios.
+
+---
+
+# 08/07/2026
+
+## Estados del remate
+
+Se implementan los tres estados oficiales:
+
 - ACTIVO
 - FINALIZADO
-- ARCHIVADO (preparado)
+- ARCHIVADO
 
-✅ Se implementó la finalización manual del remate.
+## Nuevas funciones
 
-✅ Se bloquean las ofertas una vez finalizado.
+- Finalización manual.
+- Bloqueo automático de ofertas.
+- Determinación del ganador.
+- Datos personales visibles únicamente para la Curadora.
+- Sincronización de oferta actual con Supabase.
+- Unificación visual mediante estadoRemate.js.
 
-✅ Se determina automáticamente el ganador por la mejor oferta.
+---
 
-✅ Los teléfonos y datos sensibles sólo son visibles para la Curadora.
+# 11/07/2026
 
-✅ La oferta actual quedó sincronizada con Supabase, eliminando la inconsistencia entre la lista de remates y el detalle.
+# 🎉 Cierre de desarrollo de Remate Express V1
 
-🚧 Próximo paso:
-Unificar la representación visual de los estados mediante `estadoRemate.js`, implementar el archivado desde la interfaz y luego migrar el historial completo de ofertas a Supabase.
+## Arquitectura
+
+- Migración completa a Supabase.
+- Eliminación del almacenamiento local como fuente principal.
+- Sincronización de remates y ofertas.
+- Limpieza general del proyecto.
+
+## Administración
+
+- Edición completa de remates.
+- Historial de objetos.
+- Archivado manual.
+- Nueva oportunidad para objetos archivados.
+- Eliminación automática del historial de ofertas al republicar.
+- Conservación inteligente del scroll y filtros.
+- Restauración automática del filtro correspondiente luego de cada acción.
+
+## Experiencia del usuario
+
+- Home completamente renovada.
+- Secciones informativas:
+  - ¿Cómo funciona?
+  - Quiero rematar.
+  - Comunidad.
+  - Compartir Remate Express.
+- Acceso oculto para Curadora.
+- Contador dinámico de remates activos.
+- Animaciones suaves en toda la aplicación.
+- Diseño responsive mejorado.
+
+## Remates
+
+- Galería con múltiples imágenes.
+- Navegación entre fotografías mediante botones y toque sobre la imagen.
+- Contador de fotografías.
+- Contador de ofertas.
+- Compartir un remate individual.
+- Compartir la aplicación.
+- Compartir la comunidad de WhatsApp.
+- Neuroventa integrada en cada remate.
+- Indicadores visuales de estado.
+- Mejor experiencia para remates sin ofertas.
+- Mejor experiencia para remates con ofertas.
+
+## Identidad
+
+- Nueva estética definitiva V1.
+- Paleta institucional.
+- Pie de página oficial.
+
+Remate Express V1 © 2026 · Córdoba, Argentina
+
+Un proyecto creado por @Gabiaguz
+
+---
+
+# Próximo objetivo
+
+## V1.1
+
+- Publicación de remates por los usuarios.
+- Aprobación por parte de la Curadora.
+- Notificaciones automáticas.
+- Mensajes automáticos para adjudicatarios.
+- Mensajes automáticos para la Curadora.
+- Automatización completa del flujo.
+- Mejoras visuales continuas.

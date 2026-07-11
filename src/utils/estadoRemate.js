@@ -9,7 +9,7 @@ export function obtenerEstadoRemate(remate) {
 
     case "ARCHIVADO":
       return {
-        texto: "Archivado",
+        texto: "En el historial",
         emoji: "📦",
         clase: "estado-archivado",
       };
@@ -17,7 +17,7 @@ export function obtenerEstadoRemate(remate) {
     case "ACTIVO":
     default:
       return {
-        texto: "Activo",
+        texto: "Buscando nuevo hogar",
         emoji: "🟢",
         clase: "estado-activo",
       };

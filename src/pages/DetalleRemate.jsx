@@ -1,6 +1,6 @@
 import Logo from "../components/Logo";
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ModalOfertante from "../components/ModalOfertante";
 import { obtenerOfertante } from "../utils/ofertante";
 import { esAdmin } from "../utils/admin";
@@ -25,11 +25,15 @@ function DetalleRemate() {
   const [ofertante, setOfertante] = useState(obtenerOfertante());
   const [finalizando, setFinalizando] = useState(false);
   const [ofertando, setOfertando] = useState(false);
+  const [indiceImagen, setIndiceImagen] = useState(0);
+
+  const inicioDeslizamiento = useRef(null);
 
   const adminActivo = esAdmin();
 
   async function cargarRemate() {
     const remates = await obtenerRemates();
+
     const encontrado = remates.find(
       (item) => item.id === Number(id) || item.numero === Number(id)
     );
@@ -59,6 +63,7 @@ function DetalleRemate() {
       }
 
       setMonto("");
+      setIndiceImagen(0);
     }
 
     iniciar();
@@ -92,6 +97,15 @@ function DetalleRemate() {
 
   const remateFinalizado = remate.estado === "FINALIZADO";
 
+  const imagenes =
+    Array.isArray(remate.imagenes) && remate.imagenes.length > 0
+      ? remate.imagenes
+      : remate.imagen
+        ? [remate.imagen]
+        : [];
+
+  const imagenActual = imagenes[indiceImagen] || "";
+
   const mejorOferta = ofertas.length
     ? Math.max(...ofertas.map((oferta) => oferta.monto))
     : remate.oferta;
@@ -106,6 +120,39 @@ function DetalleRemate() {
 
   function actualizarOfertante() {
     setOfertante(obtenerOfertante());
+  }
+
+  function mostrarImagenAnterior() {
+    setIndiceImagen((indiceActual) =>
+      indiceActual === 0 ? imagenes.length - 1 : indiceActual - 1
+    );
+  }
+
+  function mostrarImagenSiguiente() {
+    setIndiceImagen((indiceActual) =>
+      indiceActual === imagenes.length - 1 ? 0 : indiceActual + 1
+    );
+  }
+
+  function iniciarDeslizamiento(event) {
+    inicioDeslizamiento.current = event.touches[0].clientX;
+  }
+
+  function finalizarDeslizamiento(event) {
+    if (inicioDeslizamiento.current === null || imagenes.length <= 1) return;
+
+    const fin = event.changedTouches[0].clientX;
+    const diferencia = inicioDeslizamiento.current - fin;
+
+    if (diferencia > 50) {
+      mostrarImagenSiguiente();
+    }
+
+    if (diferencia < -50) {
+      mostrarImagenAnterior();
+    }
+
+    inicioDeslizamiento.current = null;
   }
 
   async function registrarOferta(event) {
@@ -177,15 +224,104 @@ function DetalleRemate() {
       <section className="hero">
         <Logo />
 
-        {typeof remate.imagen === "string" &&
-        remate.imagen.startsWith("data:image") ? (
-          <img
-            src={remate.imagen}
-            alt={remate.titulo}
-            className="foto-detalle-img"
-          />
+        {imagenActual.startsWith("data:image") ? (
+          <>
+            <img
+              src={imagenActual}
+              alt={`${remate.titulo} - Foto ${indiceImagen + 1}`}
+              className="foto-detalle-img"
+              onClick={() => {
+                if (imagenes.length > 1) {
+                  mostrarImagenSiguiente();
+                }
+              }}
+              onTouchStart={iniciarDeslizamiento}
+              onTouchEnd={finalizarDeslizamiento}
+              style={{
+                cursor: imagenes.length > 1 ? "pointer" : "default",
+                touchAction: "pan-y",
+              }}
+            />
+
+            {imagenes.length > 1 && (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginBottom: "14px",
+                  }}
+                >
+                  <button
+                    className="boton-secundario"
+                    type="button"
+                    onClick={mostrarImagenAnterior}
+                    style={{ marginTop: 0 }}
+                  >
+                    ←
+                  </button>
+
+                  <strong>
+                    Foto {indiceImagen + 1} de {imagenes.length}
+                  </strong>
+
+                  <button
+                    className="boton-secundario"
+                    type="button"
+                    onClick={mostrarImagenSiguiente}
+                    style={{ marginTop: 0 }}
+                  >
+                    →
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    overflowX: "auto",
+                    marginBottom: "20px",
+                    paddingBottom: "6px",
+                  }}
+                >
+                  {imagenes.map((imagen, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setIndiceImagen(index)}
+                      style={{
+                        flex: "0 0 auto",
+                        padding: 0,
+                        border:
+                          index === indiceImagen
+                            ? "3px solid #4f6443"
+                            : "1px solid #ded2bc",
+                        borderRadius: "12px",
+                        background: "transparent",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <img
+                        src={imagen}
+                        alt={`Miniatura ${index + 1}`}
+                        style={{
+                          display: "block",
+                          width: "72px",
+                          height: "72px",
+                          objectFit: "cover",
+                          borderRadius: "9px",
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         ) : (
-          <div className="foto-detalle">{remate.imagen}</div>
+          <div className="foto-detalle">{imagenActual}</div>
         )}
 
         <h1>
@@ -202,14 +338,18 @@ function DetalleRemate() {
           💰 Base: ${Number(remate.base).toLocaleString("es-AR")}
         </p>
 
-        <p>📈 Mejor oferta: ${Number(mejorOferta).toLocaleString("es-AR")}</p>
+        <p>
+          📈 Mejor oferta: ${Number(mejorOferta).toLocaleString("es-AR")}
+        </p>
 
         {remateFinalizado && ganador && (
           <div className="historial-ofertas">
             <h2>🏆 Ganador</h2>
+
             <p>
               <strong>{ganador.nombre}</strong>
             </p>
+
             <p>${Number(ganador.monto).toLocaleString("es-AR")}</p>
 
             {adminActivo && <p>📱 {ganador.telefono}</p>}
@@ -229,18 +369,25 @@ function DetalleRemate() {
         </p>
 
         <p>📍 {remate.barrio}</p>
-        <p>⏰ Finaliza: {remate.cierre}</p>
+
+        <p>
+          ⏰ {remateFinalizado ? "Finalizó" : "Finaliza"}: {remate.cierre}
+        </p>
 
         {remate.descripcion && (
           <>
             <h3>Características</h3>
-            <p style={{ whiteSpace: "pre-line" }}>{remate.descripcion}</p>
+
+            <p style={{ whiteSpace: "pre-line" }}>
+              {remate.descripcion}
+            </p>
           </>
         )}
 
         {remate.frase && remate.frase.trim() !== "" && (
           <>
             <h3>Antes de irte...</h3>
+
             <blockquote
               className="frase-neuroventa"
               style={{ whiteSpace: "pre-line" }}
@@ -270,7 +417,7 @@ function DetalleRemate() {
               onFocus={() => {
                 if (!monto) setMonto(minimo);
               }}
-              onChange={(e) => setMonto(e.target.value)}
+              onChange={(event) => setMonto(event.target.value)}
             />
 
             <button
@@ -301,21 +448,39 @@ function DetalleRemate() {
         )}
 
         <div className="historial-ofertas">
-          <h2>Ofertas</h2>
+  {ofertas.length === 0 ? (
+    <>
+      <h2>🌱 Primera oportunidad</h2>
 
-          {ofertas.length === 0 ? (
-            <p>Todavía no hay ofertas nuevas.</p>
-          ) : (
-            ofertas.map((oferta) => (
-              <p key={oferta.id}>
-                {oferta.nombre}: ${Number(oferta.monto).toLocaleString("es-AR")}
-                {adminActivo && oferta.telefono
-                  ? ` · 📱 ${oferta.telefono}`
-                  : ""}
-              </p>
-            ))
-          )}
-        </div>
+      <p>
+        💚 Este remate espera su primera oferta.
+      </p>
+
+      <p>
+        Quizás hoy seas vos quien le dé una nueva oportunidad.
+      </p>
+    </>
+  ) : (
+    <>
+      <h2>
+        🔨 {ofertas.length}{" "}
+        {ofertas.length === 1
+          ? "oferta realizada"
+          : "ofertas realizadas"}
+      </h2>
+
+      {ofertas.map((oferta) => (
+        <p key={oferta.id}>
+          {oferta.nombre}: $
+          {Number(oferta.monto).toLocaleString("es-AR")}
+          {adminActivo && oferta.telefono
+            ? ` · 📱 ${oferta.telefono}`
+            : ""}
+        </p>
+      ))}
+    </>
+  )}
+</div>
 
         <Link to="/remates" className="boton-secundario">
           ← Volver a los remates

@@ -4,9 +4,10 @@ export function esAdmin() {
 
 export function activarAdmin(clave) {
   const CLAVE =
-  localStorage.getItem("clave-admin-remate-express") || "curadora";
+    localStorage.getItem("clave-admin-remate-express") ||
+    "EdAl4550SCARG";
 
-if (clave === CLAVE) {
+  if (clave === CLAVE) {
     localStorage.setItem("admin-remate-express", "true");
     return true;
   }

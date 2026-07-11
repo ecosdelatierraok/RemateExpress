@@ -47,7 +47,7 @@ function NuevoRemate() {
   const [fechaCierre, setFechaCierre] = useState("");
   const [horaCierre, setHoraCierre] = useState("18:00");
   const [frase, setFrase] = useState("");
-  const [imagen, setImagen] = useState("");
+  const [imagenes, setImagenes] = useState([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -67,7 +67,11 @@ function NuevoRemate() {
           setIncremento(encontrado.incrementoMinimo || 1000);
           setDescripcion(encontrado.descripcion || "");
           setFrase(encontrado.frase || "");
-          setImagen(encontrado.imagen || "");
+          if (encontrado.imagenes?.length) {
+            setImagenes(encontrado.imagenes);
+            } else if (encontrado.imagen) {
+              setImagenes([encontrado.imagen]);
+          }
           setFechaCierre(encontrado.fechaCierre || "");
           setHoraCierre(encontrado.horaCierre || "18:00");
         }
@@ -204,47 +208,58 @@ function NuevoRemate() {
   }
 
   function cargarImagen(e) {
-    const archivo = e.target.files[0];
-    if (!archivo) return;
+  const archivos = Array.from(e.target.files || []).slice(0, 5);
 
-    const img = new Image();
-    const lector = new FileReader();
+  if (archivos.length === 0) return;
 
-    lector.onload = (evento) => {
-      img.src = evento.target.result;
-    };
+  Promise.all(
+    archivos.map(
+      (archivo) =>
+        new Promise((resolve) => {
+          const img = new Image();
+          const lector = new FileReader();
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const maxAncho = 800;
+          lector.onload = (evento) => {
+            img.src = evento.target.result;
+          };
 
-      let ancho = img.width;
-      let alto = img.height;
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
 
-      if (ancho > maxAncho) {
-        alto = (alto * maxAncho) / ancho;
-        ancho = maxAncho;
-      }
+            const maxAncho = 800;
 
-      canvas.width = ancho;
-      canvas.height = alto;
+            let ancho = img.width;
+            let alto = img.height;
 
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, ancho, alto);
+            if (ancho > maxAncho) {
+              alto = (alto * maxAncho) / ancho;
+              ancho = maxAncho;
+            }
 
-      setImagen(canvas.toDataURL("image/jpeg", 0.6));
-    };
+            canvas.width = ancho;
+            canvas.height = alto;
 
-    lector.readAsDataURL(archivo);
-  }
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, ancho, alto);
+
+            resolve(canvas.toDataURL("image/jpeg", 0.6));
+          };
+
+          lector.readAsDataURL(archivo);
+        })
+    )
+  ).then((imagenesComprimidas) => {
+    setImagenes(imagenesComprimidas);
+  });
+}
 
   async function publicar(e) {
     e.preventDefault();
 
-    if (!titulo || !base || !imagen) {
-      alert("Falta título, base o imagen.");
-      return;
-    }
+    if (!titulo || !base || imagenes.length === 0) {
+        alert("Falta título, base o al menos una imagen.");
+       return;
+       }
 
     const datosRemate = {
       numero: Number(numero),
@@ -257,7 +272,8 @@ function NuevoRemate() {
       horaCierre,
       estado: "Activo",
       frase,
-      imagen,
+      imagen: imagenes[0],
+      imagenes,
     };
 
     try {
@@ -385,12 +401,28 @@ function NuevoRemate() {
           </Campo>
 
           <Campo label="Imagen">
-            <input type="file" accept="image/*" onChange={cargarImagen} />
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+            onChange={cargarImagen}
+/>
           </Campo>
 
-          {imagen && (
-            <img src={imagen} alt="Vista previa" className="preview-imagen" />
-          )}
+          {imagenes.length > 0 && (
+  <>
+    <p><strong>{imagenes.length} foto(s)</strong></p>
+
+    {imagenes.map((img, index) => (
+      <img
+        key={index}
+        src={img}
+        alt={`Vista previa ${index + 1}`}
+        className="preview-imagen"
+      />
+    ))}
+  </>
+)}
 
           <button className="boton-principal" type="submit">
             {id ? "Guardar cambios" : "Publicar remate"}
