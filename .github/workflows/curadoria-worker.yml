@@ -3,9 +3,6 @@
 on:
   workflow_dispatch:
 
-  schedule:
-    - cron: "*/5 * * * *"
-
 jobs:
   curadoria:
     runs-on: ubuntu-latest
