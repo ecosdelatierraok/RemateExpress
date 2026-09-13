@@ -2,8 +2,11 @@ import { Link } from "react-router-dom";
 
 function BotonPrincipal() {
   return (
-    <Link to="/remates" className="boton-principal">
-      Ver remates activos
+    <Link
+      to="/publicaciones"
+      className="boton-principal"
+    >
+      Ver oportunidades activas
     </Link>
   );
 }

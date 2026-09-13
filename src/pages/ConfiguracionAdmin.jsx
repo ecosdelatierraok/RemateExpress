@@ -1,72 +1,238 @@
 import Logo from "../components/Logo";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { cambiarClaveAdmin, esAdmin } from "../utils/admin";
+
+import {
+  cambiarClaveAdmin,
+  esAdmin,
+} from "../utils/admin";
+
 import "../App.css";
 
 function ConfiguracionAdmin() {
-  const [nuevaClave, setNuevaClave] = useState("");
-  const [repetirClave, setRepetirClave] = useState("");
+  const [
+    claveActual,
+    setClaveActual,
+  ] = useState("");
+
+  const [
+    nuevaClave,
+    setNuevaClave,
+  ] = useState("");
+
+  const [
+    repetirClave,
+    setRepetirClave,
+  ] = useState("");
+
+  const [
+    guardando,
+    setGuardando,
+  ] = useState(false);
+
+  const [
+    habilitarClaveActual,
+    setHabilitarClaveActual,
+  ] = useState(false);
 
   if (!esAdmin()) {
     return (
       <main className="app">
         <section className="hero">
+          <Logo />
 
-            <Logo />
-          
-          <h1>Acceso restringido</h1>
-          <p>Esta sección es solo para Curadora.</p>
+          <h1>
+            Acceso restringido
+          </h1>
+
+          <p>
+            Esta sección es solo para
+            Administración.
+          </p>
+
+          <Link
+            to="/"
+            className="boton-secundario"
+          >
+            ← Volver al inicio
+          </Link>
         </section>
       </main>
     );
   }
 
-  function guardar(e) {
-    e.preventDefault();
+  async function guardar(event) {
+    event.preventDefault();
 
-    if (!nuevaClave || nuevaClave.length < 4) {
-      alert("La contraseña debe tener al menos 4 caracteres.");
+    if (guardando) {
       return;
     }
 
-    if (nuevaClave !== repetirClave) {
-      alert("Las contraseñas no coinciden.");
+    if (!claveActual) {
+      alert(
+        "Ingresá tu contraseña actual."
+      );
+
       return;
     }
 
-    cambiarClaveAdmin(nuevaClave);
-    alert("Contraseña actualizada.");
-    setNuevaClave("");
-    setRepetirClave("");
+    if (
+      !nuevaClave ||
+      nuevaClave.length < 6
+    ) {
+      alert(
+        "La nueva contraseña debe tener al menos 6 caracteres."
+      );
+
+      return;
+    }
+
+    if (
+      nuevaClave !==
+      repetirClave
+    ) {
+      alert(
+        "Las nuevas contraseñas no coinciden."
+      );
+
+      return;
+    }
+
+    if (
+      claveActual ===
+      nuevaClave
+    ) {
+      alert(
+        "La nueva contraseña debe ser diferente de la actual."
+      );
+
+      return;
+    }
+
+    try {
+      setGuardando(true);
+
+      const resultado =
+        await cambiarClaveAdmin(
+          claveActual,
+          nuevaClave
+        );
+
+      if (!resultado.ok) {
+        alert(
+          resultado.mensaje ||
+            "No se pudo actualizar la contraseña."
+        );
+
+        return;
+      }
+
+      alert(
+        "Contraseña de Administración actualizada correctamente."
+      );
+
+      setClaveActual("");
+      setNuevaClave("");
+      setRepetirClave("");
+      setHabilitarClaveActual(false);
+    } catch (error) {
+      console.error(
+        "Error al cambiar la contraseña:",
+        error
+      );
+
+      alert(
+        "No se pudo actualizar la contraseña."
+      );
+    } finally {
+      setGuardando(false);
+    }
   }
 
   return (
     <main className="app">
       <section className="hero">
-        <h1>Configuración</h1>
+        <Logo />
 
-        <form className="form-oferta" onSubmit={guardar}>
+        <h1>
+          Configuración
+        </h1>
+
+        <form
+          className="formulario-panel"
+          onSubmit={guardar}
+          autoComplete="off"
+        >
+          <h2>
+            Contraseña de Administración
+          </h2>
+
+          <p className="texto-ayuda">
+            Para cambiarla, ingresá primero
+            tu contraseña actual.
+          </p>
+
           <input
             type="password"
+            name="clave-actual-segunda-vuelta"
+            placeholder="Contraseña actual"
+            autoComplete="off"
+            value={claveActual}
+            disabled={guardando}
+            readOnly={!habilitarClaveActual}
+            onFocus={() =>
+              setHabilitarClaveActual(true)
+            }
+            onChange={(event) =>
+              setClaveActual(
+                event.target.value
+              )
+            }
+          />
+
+          <input
+            type="password"
+            name="nueva-clave-segunda-vuelta"
             placeholder="Nueva contraseña"
+            autoComplete="new-password"
             value={nuevaClave}
-            onChange={(e) => setNuevaClave(e.target.value)}
+            disabled={guardando}
+            onChange={(event) =>
+              setNuevaClave(
+                event.target.value
+              )
+            }
           />
 
           <input
             type="password"
-            placeholder="Repetir contraseña"
+            name="repetir-nueva-clave-segunda-vuelta"
+            placeholder="Repetir nueva contraseña"
+            autoComplete="new-password"
             value={repetirClave}
-            onChange={(e) => setRepetirClave(e.target.value)}
+            disabled={guardando}
+            onChange={(event) =>
+              setRepetirClave(
+                event.target.value
+              )
+            }
           />
 
-          <button className="boton-principal" type="submit">
-            Guardar contraseña
+          <button
+            className="boton-principal"
+            type="submit"
+            disabled={guardando}
+          >
+            {guardando
+              ? "Guardando..."
+              : "Cambiar contraseña"}
           </button>
         </form>
 
-        <Link to="/remates" className="boton-secundario">
+        <Link
+          to="/publicaciones"
+          className="boton-secundario"
+        >
           ← Volver
         </Link>
       </section>

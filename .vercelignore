@@ -1,0 +1,7 @@
+node_modules
+.venv-curaduria
+curaduria-service
+backups
+*.zip
+.env
+.env.*

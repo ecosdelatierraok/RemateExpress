@@ -1,19 +1,137 @@
-import { Routes, Route } from "react-router-dom";
+import {
+  Routes,
+  Route,
+} from "react-router-dom";
+
 import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
 import Home from "./pages/Home";
-import Remates from "./pages/Remates";
-import DetalleRemate from "./pages/DetalleRemate";
-import NuevoRemate from "./pages/NuevoRemate";
+import Publicaciones from "./pages/Publicaciones";
+import DetallePublicacion from "./pages/DetallePublicacion";
+import NuevaPublicacion from "./pages/NuevaPublicacion";
+
+import PublicarInicio from "./pages/PublicarInicio";
+import PublicarFotos from "./pages/PublicarFotos";
+import PublicarCaptura from "./pages/PublicarCaptura";
+import PublicarAnalizando from "./pages/PublicarAnalizando";
+import PublicarValor from "./pages/PublicarValor";
+import PublicarRevision from "./pages/PublicarRevision";
+import PublicarUbicacion from "./pages/PublicarUbicacion";
+import PublicarConfirmar from "./pages/PublicarConfirmar";
+
+import Registro from "./pages/Registro";
+import Ingresar from "./pages/Ingresar";
+import MiCuenta from "./pages/MiCuenta";
+import MisPublicaciones from "./pages/MisPublicaciones";
+import MisPropuestas from "./pages/MisPropuestas";
+import Mensajes from "./pages/Mensajes";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/remates" element={<Remates />} />
-      <Route path="/remate/:id" element={<DetalleRemate />} />
-      <Route path="/nuevo" element={<NuevoRemate />} />
-      <Route path="/editar/:id" element={<NuevoRemate />} />
-      <Route path="/configuracion" element={<ConfiguracionAdmin />} />
+      <Route
+        path="/"
+        element={<Home />}
+      />
+
+      <Route
+        path="/publicaciones"
+        element={<Publicaciones />}
+      />
+
+      <Route
+        path="/publicacion/id/:id"
+        element={<DetallePublicacion />}
+      />
+
+      <Route
+        path="/publicacion/:numero"
+        element={<DetallePublicacion />}
+      />
+
+      <Route
+        path="/publicar"
+        element={<PublicarInicio />}
+      />
+
+      <Route
+        path="/publicar/fotos"
+        element={<PublicarFotos />}
+      />
+
+      <Route
+        path="/publicar/captura"
+        element={<PublicarCaptura />}
+      />
+
+      <Route
+        path="/publicar/analizando"
+        element={<PublicarAnalizando />}
+      />
+
+      <Route
+        path="/publicar/valor"
+        element={<PublicarValor />}
+      />
+
+      <Route
+        path="/publicar/revision"
+        element={<PublicarRevision />}
+      />
+
+      <Route
+        path="/publicar/ubicacion"
+        element={<PublicarUbicacion />}
+      />
+
+      <Route
+        path="/publicar/confirmar"
+        element={<PublicarConfirmar />}
+      />
+
+      <Route
+        path="/nueva-publicacion"
+        element={<NuevaPublicacion />}
+      />
+
+      <Route
+        path="/editar-publicacion/:id"
+        element={<NuevaPublicacion />}
+      />
+
+      <Route
+        path="/configuracion"
+        element={<ConfiguracionAdmin />}
+      />
+
+      <Route
+        path="/registro"
+        element={<Registro />}
+      />
+
+      <Route
+        path="/ingresar"
+        element={<Ingresar />}
+      />
+
+      <Route
+        path="/mi-cuenta"
+        element={<MiCuenta />}
+      />
+
+      <Route
+        path="/mis-publicaciones"
+        element={<MisPublicaciones />}
+      />
+
+      <Route
+        path="/mis-propuestas"
+        element={<MisPropuestas />}
+      />
+
+      <Route
+        path="/mensajes"
+        element={<Mensajes />}
+      />
     </Routes>
   );
 }

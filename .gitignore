@@ -27,3 +27,6 @@ dist-ssr
 
 backups/
 supabase/.temp/
+
+*.env
+.env*
