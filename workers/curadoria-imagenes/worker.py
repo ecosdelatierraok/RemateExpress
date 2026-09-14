@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Event
 
 from dotenv import load_dotenv
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 from rembg import remove, new_session
 from supabase import create_client
 
@@ -147,9 +147,14 @@ def booleano_entorno(
 # ======================================================
 
 TAMANIO_FINAL = 1200
-MARGEN = 120
-CALIDAD_WEBP = 88
+MARGEN = 110
+CALIDAD_WEBP = 90
 MODELO = "u2net"
+
+UMBRAL_ALPHA = 8
+PADDING_RELATIVO = 0.05
+PADDING_MINIMO = 18
+MAX_LADO_UTIL = TAMANIO_FINAL - (MARGEN * 2)
 
 BATCH_SIZE = entero_entorno(
     "SV_IMAGE_BATCH_SIZE",
@@ -318,29 +323,141 @@ def obtener_sesion_modelo():
 # PROCESAMIENTO DE IMAGEN
 # ======================================================
 
+def abrir_imagen_desde_bytes(
+    datos_entrada,
+    modo="RGBA",
+):
+    imagen = Image.open(
+        io.BytesIO(
+            datos_entrada
+        )
+    )
+
+    imagen = ImageOps.exif_transpose(
+        imagen
+    )
+
+    return imagen.convert(
+        modo
+    )
+
+
+def limpiar_canal_alpha(
+    alfa,
+):
+    alfa = alfa.point(
+        lambda valor: 0 if valor <= UMBRAL_ALPHA else valor
+    )
+
+    alfa = alfa.filter(
+        ImageFilter.MedianFilter(
+            size=3
+        )
+    )
+
+    return alfa
+
+
+def expandir_caja(
+    caja,
+    ancho_total,
+    alto_total,
+):
+    x1, y1, x2, y2 = caja
+
+    ancho = max(
+        1,
+        x2 - x1,
+    )
+
+    alto = max(
+        1,
+        y2 - y1,
+    )
+
+    pad_x = max(
+        PADDING_MINIMO,
+        round(
+            ancho * PADDING_RELATIVO
+        ),
+    )
+
+    pad_y = max(
+        PADDING_MINIMO,
+        round(
+            alto * PADDING_RELATIVO
+        ),
+    )
+
+    return (
+        max(
+            0,
+            x1 - pad_x,
+        ),
+        max(
+            0,
+            y1 - pad_y,
+        ),
+        min(
+            ancho_total,
+            x2 + pad_x,
+        ),
+        min(
+            alto_total,
+            y2 + pad_y,
+        ),
+    )
+
+
 def preparar_objeto_sin_fondo(
     datos_entrada,
 ):
-    datos_salida = remove(
+    imagen_origen = abrir_imagen_desde_bytes(
         datos_entrada,
-        session=
-            obtener_sesion_modelo(),
+        modo="RGBA",
     )
 
-    return Image.open(
-        io.BytesIO(
-            datos_salida
-        )
-    ).convert(
-        "RGBA"
+    buffer_entrada = io.BytesIO()
+
+    imagen_origen.save(
+        buffer_entrada,
+        format="PNG",
     )
+
+    datos_salida = remove(
+        buffer_entrada.getvalue(),
+        session=obtener_sesion_modelo(),
+        alpha_matting=True,
+        alpha_matting_foreground_threshold=240,
+        alpha_matting_background_threshold=10,
+        alpha_matting_erode_size=8,
+    )
+
+    imagen = abrir_imagen_desde_bytes(
+        datos_salida,
+        modo="RGBA",
+    )
+
+    alfa = limpiar_canal_alpha(
+        imagen.getchannel(
+            "A"
+        )
+    )
+
+    imagen.putalpha(
+        alfa
+    )
+
+    return imagen
 
 
 def componer_objeto_en_blanco(
     imagen,
 ):
-    alfa = imagen.getchannel(
-        "A"
+    alfa = limpiar_canal_alpha(
+        imagen.getchannel(
+            "A"
+        )
     )
 
     caja_objeto = alfa.getbbox()
@@ -349,6 +466,12 @@ def componer_objeto_en_blanco(
         raise ValueError(
             "No se encontró ningún objeto visible."
         )
+
+    caja_objeto = expandir_caja(
+        caja_objeto,
+        imagen.width,
+        imagen.height,
+    )
 
     objeto = imagen.crop(
         caja_objeto
@@ -364,14 +487,9 @@ def componer_objeto_en_blanco(
             "El objeto detectado no tiene dimensiones válidas."
         )
 
-    espacio_util = (
-        TAMANIO_FINAL
-        - MARGEN * 2
-    )
-
     escala = min(
-        espacio_util / ancho,
-        espacio_util / alto,
+        MAX_LADO_UTIL / ancho,
+        MAX_LADO_UTIL / alto,
     )
 
     nuevo_ancho = max(
@@ -394,6 +512,14 @@ def componer_objeto_en_blanco(
             nuevo_alto,
         ),
         Image.Resampling.LANCZOS,
+    )
+
+    objeto = objeto.filter(
+        ImageFilter.UnsharpMask(
+            radius=1.3,
+            percent=130,
+            threshold=2,
+        )
     )
 
     lienzo = Image.new(
@@ -427,31 +553,25 @@ def componer_objeto_en_blanco(
 def crear_fallback_seguro(
     datos_entrada,
 ):
-    imagen = Image.open(
-        io.BytesIO(
-            datos_entrada
-        )
-    )
-
-    imagen = ImageOps.exif_transpose(
-        imagen
-    ).convert(
-        "RGB"
-    )
-
-    margen_fallback = 54
-
-    espacio = (
-        TAMANIO_FINAL
-        - margen_fallback * 2
+    imagen = abrir_imagen_desde_bytes(
+        datos_entrada,
+        modo="RGB",
     )
 
     imagen.thumbnail(
         (
-            espacio,
-            espacio,
+            MAX_LADO_UTIL,
+            MAX_LADO_UTIL,
         ),
         Image.Resampling.LANCZOS,
+    )
+
+    imagen = imagen.filter(
+        ImageFilter.UnsharpMask(
+            radius=1.2,
+            percent=120,
+            threshold=2,
+        )
     )
 
     lienzo = Image.new(
